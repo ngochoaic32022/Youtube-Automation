@@ -1,0 +1,21 @@
+{
+  "manifesto": "ĐEM LẠI GIÁ TRỊ THỰC SỰ CHO NGƯỜI XEM",
+  "principles": [
+    {
+      "rule": "Visual-Narrative Sync (Khớp hình ảnh 100%)",
+      "detail": "Lời nói nhắc đến thực thể, địa danh hay hiện tượng nào, khung hình phải lập tức hiển thị chính xác thực thể đó. Tuyệt đối không dùng ảnh trừu tượng, lệch pha gây mất tập trung."
+    },
+    {
+      "rule": "High Information Density (Mật độ tri thức cao)",
+      "detail": "Không làm nội dung rác, không câu giờ sáo rỗng. Mỗi video phải cung cấp kiến thức thực tế, số liệu khoa học xác thực hoặc góc nhìn lịch sử/tự nhiên mà 90% người xem chưa từng biết."
+    },
+    {
+      "rule": "Storytelling & Retention (Dẫn chuyện cuốn hút)",
+      "detail": "3 giây đầu nêu thẳng vấn đề gây tò mò, thân bài giải thích bản chất 'Tại sao lại như vậy' một cách dễ hiểu, kết bài để lại một bài học hoặc suy ngẫm sâu sắc."
+    },
+    {
+      "rule": "Aesthetics & Sound (Thẩm mỹ & Âm thanh điện ảnh)",
+      "detail": "Phụ đề chữ to sắc nét (Montserrat Black), chạy màu karaoke theo nhịp đọc, nhạc nền hòa quyện với hiệu ứng chuyển động máy quay Ken Burns."
+    }
+  ]
+}

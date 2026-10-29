@@ -1,0 +1,51 @@
+name: Daily YouTube Multi-Channel Automation
+
+on:
+  schedule:
+    # 04:30 UTC = 11:30 GMT+7 (Ca trưa Kênh 1)
+    - cron: '30 4 * * *'
+    # 11:45 UTC = 18:45 GMT+7 (Ca tối Kênh 1 + Kênh 2/Kênh 3)
+    - cron: '45 11 * * *'
+  workflow_dispatch: # Cho phép bấm 'Run workflow' thủ công trên web GitHub bất cứ lúc nào
+
+jobs:
+  produce_and_upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore OAuth Tokens from GitHub Secrets
+        env:
+          TOKEN_CHANNEL_1: ${{ secrets.TOKEN_CHANNEL_1 }}
+          TOKEN_CHANNEL_2: ${{ secrets.TOKEN_CHANNEL_2 }}
+          TOKEN_CHANNEL_3: ${{ secrets.TOKEN_CHANNEL_3 }}
+          PROXIES_JSON: ${{ secrets.PROXIES_JSON }}
+        run: |
+          mkdir -p config/tokens
+          if [ -n "$TOKEN_CHANNEL_1" ]; then echo "$TOKEN_CHANNEL_1" > config/tokens/token_channel_1.json; fi
+          if [ -n "$TOKEN_CHANNEL_2" ]; then echo "$TOKEN_CHANNEL_2" > config/tokens/token_channel_2.json; fi
+          if [ -n "$TOKEN_CHANNEL_3" ]; then echo "$TOKEN_CHANNEL_3" > config/tokens/token_channel_3.json; fi
+          if [ -n "$PROXIES_JSON" ]; then echo "$PROXIES_JSON" > config/proxies.json; fi
+
+      - name: Run Multi-Channel Production Engine
+        run: |
+          python core/produce_all_channels_daily.py

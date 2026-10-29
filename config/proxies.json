@@ -1,0 +1,29 @@
+{
+  "channel_1": {
+    "name": "Kỳ Thú Khám Phá",
+    "proxy_type": "socks5",
+    "host": "171.241.66.158",
+    "port": 51091,
+    "user": "william501",
+    "pass": "nteymjq2odi5",
+    "expected_ip": "171.241.66.158"
+  },
+  "channel_2": {
+    "name": "Vintage Holiday Classics",
+    "proxy_type": "socks5",
+    "host": "14.250.193.244",
+    "port": 54182,
+    "user": "IaEKqE",
+    "pass": "VKaFRZ",
+    "expected_ip": "14.250.193.244"
+  },
+  "channel_3": {
+    "name": "Channel 3",
+    "proxy_type": "socks5",
+    "host": "171.245.160.235",
+    "port": 57372,
+    "user": "ava294",
+    "pass": "nzazodqxmjq=",
+    "expected_ip": "171.245.160.235"
+  }
+}

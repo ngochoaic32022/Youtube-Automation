@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Rendered outputs & heavy media
+outputs/
+*.mp4
+*.mkv
+*.avi
+*.wav
+
+# OAuth Secrets & Tokens (Secured via GitHub Secrets)
+config/tokens/
+config/client_secrets*.json
+
+# Old backup
+.git_old/
+
+# System / IDE
+.vscode/
+.idea/
+*.log

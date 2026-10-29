@@ -1,0 +1,44 @@
+{
+  "channels": {
+    "channel_1": {
+      "id": "channel_1",
+      "name": "Kỳ Thú Khám Phá (Shorts AI)",
+      "format": "shorts",
+      "aspect_ratio": "9:16",
+      "resolution": [1080, 1920],
+      "niche": "Khoa học, Bí ẩn, Sự thật bất ngờ",
+      "language": "vi",
+      "voice": "vi-VN-NamMinhNeural",
+      "target_duration_sec": 45,
+      "schedule_frequency": "1-2 videos/day",
+      "description": "Kênh Shorts ngắn, giật gân, nhịp nhanh kéo đề xuất và sub thần tốc."
+    },
+    "channel_2": {
+      "id": "channel_2",
+      "name": "Hồ Sơ Kinh Doanh & Tiền Tệ",
+      "format": "longform",
+      "aspect_ratio": "16:9",
+      "resolution": [1920, 1080],
+      "niche": "Tài chính, Vụ án kinh tế, Chiến lược đế chế kinh doanh",
+      "language": "vi",
+      "voice": "vi-VN-NamMinhNeural",
+      "target_duration_sec": 480,
+      "schedule_frequency": "3 videos/week",
+      "description": "Kênh dài phân tích sâu, RPM cao, tối ưu 4000 giờ xem để bật kiếm tiền bền vững."
+    },
+    "channel_3": {
+      "id": "channel_3",
+      "youtube_id": "UCNSYyeuRbUYStAMgp6bxkxA",
+      "name": "Stoic Echoes",
+      "handle": "@stoicechoeshq",
+      "format": "hybrid",
+      "aspect_ratio": "16:9 & 9:16",
+      "niche": "Stoic Philosophy, Deep Human Nature, Mental Resilience",
+      "language": "en",
+      "voice": "en-US-ChristopherNeural",
+      "target_duration_sec": 720,
+      "schedule_frequency": "2 Long-form/week + 1 Short/day",
+      "description": "Kênh thị trường Mỹ & Tier-1 RPM cao ($15-$28). Mục tiêu bật kiếm tiền trong 30 ngày qua mô hình Hybrid Flywheel."
+    }
+  }
+}
