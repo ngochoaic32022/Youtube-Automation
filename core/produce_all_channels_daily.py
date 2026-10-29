@@ -4,7 +4,7 @@ import json
 import time
 import asyncio
 import subprocess
-import urllib.request
+import random
 from datetime import datetime, timedelta, timezone
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -17,37 +17,184 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+import edge_tts
 from core.tts_engine import TTSEngine
 from core.clean_subtitle_builder import build_perfect_subtitles
 from core.video_renderer import VideoRenderer
 from core.youtube_uploader import YouTubeUploader
-from core.channel2_daily_shorts_engine import produce_next_shorts
-import edge_tts
-from faster_whisper import WhisperModel
+from core.stock_video_fetcher import fetch_stock_video_clip
 
 # =====================================================================
 # TASK 1: CHANNEL 1 - KỲ THÚ KHÁM PHÁ (SHORTS)
 # =====================================================================
 async def produce_channel_1():
     print("\n" + "=" * 70)
-    print("🚀 [BƯỚC 1/3] KÊNH 1 (KỲ THÚ KHÁM PHÁ): ĐÃ HOÀN TẤT & LÊN LỊCH")
+    print("🚀 [BƯỚC 1/3] SẢN XUẤT SHORTS KÊNH 1 (KỲ THÚ KHÁM PHÁ)")
     print("=" * 70)
-    video_id = "gIVfBiKp0J0"
-    print(f"  🎉 [THÀNH CÔNG KÊNH 1] Video ID: {video_id} | Đã lên lịch phát sóng 18:45 hôm nay!")
-    print(f"  Link video: https://youtu.be/{video_id}")
+
+    out_dir = os.path.join(ROOT_DIR, "outputs", "channel_1")
+    os.makedirs(out_dir, exist_ok=True)
+
+    scenes_data = [
+        {
+            "sentence": "Bạn có biết, ngay lúc này, một thiên thạch khổng lồ đang lao qua không gian với vận tốc 40.000 km một giờ?",
+            "keyword": "asteroid flying in space",
+            "fallback": "galaxy space universe"
+        },
+        {
+            "sentence": "Nếu nó đâm vào Trái Đất, năng lượng giải phóng sẽ tương đương với hàng triệu quả bom nguyên tử phát nổ cùng lúc.",
+            "keyword": "huge explosion earth destruction",
+            "fallback": "fire fiery magma explosion"
+        },
+        {
+            "sentence": "Thế nhưng, chính lực hấp dẫn khổng lồ của Sao Mộc đã như một lá chắn vô hình, hút lệch quỹ đạo của hàng ngàn quái vật không gian này.",
+            "keyword": "planet jupiter space",
+            "fallback": "planets solar system"
+        },
+        {
+            "sentence": "Nhân loại vẫn đang an toàn sống sót mỗi ngày nhờ sự che chở kỳ diệu của vũ trụ. Bấm đăng ký kênh Kỳ Thú Khám Phá để khám phá thêm nhé!",
+            "keyword": "earth rotating from space",
+            "fallback": "beautiful planet earth"
+        }
+    ]
+
+    # 1. Generate Voice
+    voice_audio = os.path.join(out_dir, "voice_ch1.mp3")
+    full_script = " ".join([s["sentence"] for s in scenes_data])
+    print(f"  [+] Đang tạo giọng đọc Nam Minh AI (vi-VN-NamMinhNeural)...")
+    comm = edge_tts.Communicate(full_script, "vi-VN-NamMinhNeural", rate="+4%")
+    await comm.save(voice_audio)
+
+    # 2. Get Audio Duration
+    renderer = VideoRenderer(width=1080, height=1920)
+    tot_dur = renderer._get_audio_duration(voice_audio)
+    print(f"      Thời lượng voiceover: {tot_dur:.2f}s")
+
+    # 3. Fetch Stock Video Clips (Motion Visuals)
+    clips = []
+    for idx, sc in enumerate(scenes_data, 1):
+        clip_path = os.path.join(out_dir, f"motion_clip_{idx}.mp4")
+        if not os.path.exists(clip_path):
+            print(f"  [+] Tải video stock cảnh {idx} cho từ khóa '{sc['keyword']}'...")
+            ok = fetch_stock_video_clip(sc["keyword"], clip_path, orientation="portrait", fallback_keywords=[sc["fallback"], "mysterious space"])
+            if not ok:
+                # If download failed, use test clip or loop
+                clip_path = os.path.join(ROOT_DIR, "outputs", "test_stock_short.mp4")
+        if os.path.exists(clip_path):
+            clips.append(clip_path)
+
+    # 4. Generate Subtitles
+    ass_path = os.path.join(out_dir, "subtitles_ch1.ass")
+    sentence_durs = [tot_dur / len(scenes_data)] * len(scenes_data)
+    build_perfect_subtitles(scenes_data, sentence_durs, ass_path, is_shorts=True)
+
+    # 5. Render Final Motion Short
+    final_video = os.path.join(out_dir, "short_ch1_master.mp4")
+    bg_music = os.path.join(ROOT_DIR, "assets", "music", "deep_ocean_drone.mp3")
+    if not os.path.exists(bg_music):
+        bg_music = None
+
+    print("  [+] Đang render video chuyển động Full HD 9:16...")
+    if clips:
+        renderer.render_from_video_clips(
+            video_clip_paths=clips,
+            voice_audio_path=voice_audio,
+            output_video_path=final_video,
+            subtitle_path=ass_path,
+            bg_music_path=bg_music,
+            music_volume=0.12
+        )
+    else:
+        print("  [!] Không có clip, bỏ qua render.")
+        return None
+
+    # 6. Upload
+    print("  [+] Đang tải lên YouTube (Kênh 1)...")
+    uploader = YouTubeUploader("channel_1")
+    title = "Lá Chắn Bí Ẩn: Thứ Gì Đang Bảo Vệ Trái Đất Khỏi Tuyệt Chủng? 😱 #shorts"
+    desc = """Bí ẩn vũ trụ: Thứ gì đang âm thầm bảo vệ sự sống trên Trái Đất suốt hàng tỷ năm qua?
+
+🔔 Đăng ký kênh Kỳ Thú Khám Phá để không bỏ lỡ những sự thật chấn động!
+
+#shorts #khoahoc #khampha #vutru #bian #traidat #saohoa #saomoc"""
+    tags = ["shorts", "khoa hoc", "kham pha", "bi an", "vu tru", "thien thach", "sao moc", "trai dat", "ky thu kham pha"]
+
+    res = uploader.upload_video(
+        video_file_path=final_video,
+        title=title,
+        description=desc,
+        tags=tags,
+        category_id="28",
+        privacy_status="public"
+    )
+    video_id = res if isinstance(res, str) else res.get("id")
+    print(f"  🎉 [THÀNH CÔNG KÊNH 1] Video ID: {video_id} | https://youtu.be/{video_id}")
     return video_id
 
 
 # =====================================================================
 # TASK 2: CHANNEL 2 - VINTAGE HOLIDAY CLASSICS
 # =====================================================================
-def produce_channel_2():
+async def produce_channel_2():
     print("\n" + "=" * 70)
-    print("🎄 [BƯỚC 2/3] SẢN XUẤT & LÊN LỊCH SHORTS KÊNH 2 (VINTAGE HOLIDAY)")
+    print("🎄 [BƯỚC 2/3] SẢN XUẤT SHORTS KÊNH 2 (VINTAGE HOLIDAY)")
     print("=" * 70)
-    results = produce_next_shorts(count=1, schedule_mode=True)
-    print(f"  🎉 [THÀNH CÔNG KÊNH 2] Đã xử lý & lên lịch thành công!")
-    return results
+
+    out_dir = os.path.join(ROOT_DIR, "outputs", "channel_2", "shorts")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Fetch vintage holiday stock video (e.g. cozy fireplace, Christmas market, snow)
+    stock_clip = os.path.join(out_dir, "vintage_christmas_bg.mp4")
+    if not os.path.exists(stock_clip):
+        print("  [+] Tải video stock chuyển động Giáng sinh ấm cúng...")
+        fetch_stock_video_clip("cozy fireplace christmas snow", stock_clip, orientation="portrait", fallback_keywords=["christmas tree lights", "winter snowfall"])
+
+    # Generate audio: Generate a short voice intro or ambient
+    intro_audio = os.path.join(out_dir, "intro_audio.mp3")
+    script = "Step into the warmth of a 1950s Christmas. Tap the related video below for the full vintage holiday playlist."
+    comm = edge_tts.Communicate(script, "en-US-ChristopherNeural", rate="-2%")
+    await comm.save(intro_audio)
+
+    renderer = VideoRenderer(width=1080, height=1920)
+    final_video = os.path.join(out_dir, "christmas_short_master.mp4")
+
+    # Render video
+    if os.path.exists(stock_clip):
+        renderer.render_from_video_clips(
+            video_clip_paths=[stock_clip],
+            voice_audio_path=intro_audio,
+            output_video_path=final_video,
+            music_volume=0.2
+        )
+    else:
+        print("  [!] Không có clip Giáng sinh, bỏ qua.")
+        return None
+
+    # Upload
+    print("  [+] Đang tải lên YouTube (Kênh 2)...")
+    uploader = YouTubeUploader("channel_2")
+    title = "Warm Memories of a 1950s Christmas 🎄 Cozy Fireplace & Vintage Joy #shorts"
+    desc = """Relive the nostalgic warmth of classic holiday seasons.
+    
+🎄 FULL 100-MINUTE PLAYLIST LINKED IN RELATED VIDEO ABOVE!
+Tap the Related Video link above to enjoy hours of relaxing vintage Christmas music.
+
+🔔 Subscribe to Vintage Holiday Classics for daily holiday cheer!
+
+#shorts #vintagechristmas #christmasmusic #1950schristmas #holidaynostalgia #cozyfireplace #christmassongs"""
+    tags = ["shorts", "vintage christmas", "christmas music", "1950s christmas", "cozy fireplace", "holiday nostalgia", "vintage holiday classics"]
+
+    res = uploader.upload_video(
+        video_file_path=final_video,
+        title=title,
+        description=desc,
+        tags=tags,
+        category_id="10",
+        privacy_status="public"
+    )
+    video_id = res if isinstance(res, str) else res.get("id")
+    print(f"  🎉 [THÀNH CÔNG KÊNH 2] Video ID: {video_id} | https://youtu.be/{video_id}")
+    return video_id
 
 
 # =====================================================================
@@ -58,138 +205,62 @@ async def produce_channel_3():
     print("🏛️ [BƯỚC 3/3] SẢN XUẤT VIDEO SHORTS CHO KÊNH 3 (STOIC ECHOES)")
     print("=" * 70)
 
-    shorts_dir = "d:/KENH GEHIHI/outputs/channel_3/shorts"
+    shorts_dir = os.path.join(ROOT_DIR, "outputs", "channel_3", "shorts")
     os.makedirs(shorts_dir, exist_ok=True)
 
-    script_text = """You have power over your mind—not outside events. Realize this, and you will find strength.
-Two thousand years ago, Roman Emperor Marcus Aurelius woke up with a simple truth:
+    script_text = """You have power over your mind—not outside events. Realize this, and you will find quiet strength.
+Roman Emperor Marcus Aurelius woke up each morning with one simple truth:
 Most of what you worry about has never happened, and will never happen.
-You suffer more often in imagination than in reality.
-Whenever your thoughts begin to spiral into anxiety, ask yourself this one question:
-"Is this within my control, or is this beyond my control?"
-If it's beyond your control... let it go.
+You suffer far more in imagination than in reality.
+Whenever anxiety threatens your peace, ask yourself:
+"Is this within my control, or is it beyond my control?"
+If it is beyond your control... let it go.
 Clinging to what you cannot change is the ultimate form of self-torture.
-Watch the full 7 Stoic Rules in the related video below."""
+Watch the full 7 Stoic Rules in the related video linked below."""
 
-    voice_audio = f"{shorts_dir}/short2_audio.mp3"
+    voice_audio = os.path.join(shorts_dir, "stoic_voice.mp3")
     print("  [+] Đang tạo voiceover tiếng Anh (en-US-ChristopherNeural)...")
     comm = edge_tts.Communicate(script_text, 'en-US-ChristopherNeural', rate='-3%', pitch='-2Hz')
     await comm.save(voice_audio)
 
-    # Calculate audio duration
-    probe_cmd = [
-        "ffprobe", "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        voice_audio
-    ]
-    tot_dur = float(subprocess.check_output(probe_cmd).decode('utf-8').strip())
+    renderer = VideoRenderer(width=1080, height=1920)
+    tot_dur = renderer._get_audio_duration(voice_audio)
     print(f"      Thời lượng giọng đọc: {tot_dur:.2f}s")
 
-    # Generate ASS subtitle
-    print("  [+] Tạo phụ đề chữ to tiếng Anh chuẩn Stoic...")
-    model = WhisperModel("tiny", device="cpu", compute_type="int8")
-    segments, _ = model.transcribe(voice_audio, beam_size=5, word_timestamps=True)
+    # Download Roman statue / Greek temple stock clips
+    clip_1 = os.path.join(shorts_dir, "stoic_statue_clip.mp4")
+    if not os.path.exists(clip_1):
+        print("  [+] Tải video stock tượng La Mã / đền Hy Lạp...")
+        fetch_stock_video_clip("ancient roman statue marble", clip_1, orientation="portrait", fallback_keywords=["greek sculpture temple", "dark rainy architecture"])
 
-    def sec_to_ass(seconds: float) -> str:
-        centisec = int((seconds - int(seconds)) * 100)
-        minutes, seconds = divmod(int(seconds), 60)
-        hours, minutes = divmod(minutes, 60)
-        return f"{hours}:{minutes:02d}:{seconds:02d}.{centisec:02d}"
+    # Subtitles
+    ass_path = os.path.join(shorts_dir, "stoic_sub.ass")
+    scenes = [{"sentence": s.strip()} for s in script_text.split("\n") if s.strip()]
+    sentence_durs = [tot_dur / len(scenes)] * len(scenes)
+    build_perfect_subtitles(scenes, sentence_durs, ass_path, is_shorts=True)
 
-    header = f"""[Script Info]
-Title: Stoic Short 2 Subtitles
-ScriptType: v4.00+
-WrapStyle: 0
-ScaledBorderAndShadow: yes
-PlayResX: 1080
-PlayResY: 1920
+    # Render
+    final_video = os.path.join(shorts_dir, "stoic_short_master.mp4")
+    clips = [clip_1] if os.path.exists(clip_1) else []
+    if clips:
+        renderer.render_from_video_clips(
+            video_clip_paths=clips,
+            voice_audio_path=voice_audio,
+            output_video_path=final_video,
+            subtitle_path=ass_path,
+            music_volume=0.1
+        )
+    else:
+        print("  [!] Không có clip Stoic, bỏ qua.")
+        return None
 
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: TopBadge,Georgia,44,&H00FFFFFF,&H0000FFFF,&H00000000,&H90000000,-1,0,0,0,100,100,2,0,1,5,3,8,30,30,220,1
-Style: SubtitleKaraoke,Montserrat Black,56,&H00F5FAFF,&H0000FFFF,&H00000000,&HA0000000,-1,0,0,0,100,100,1,0,1,6,4,2,40,40,820,1
-Style: BottomCTA,Montserrat Black,38,&H0015E8FF,&H0000FFFF,&H00000000,&HA0000000,-1,0,0,0,100,100,1,0,1,5,3,2,30,30,260,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-    events = []
-    tot_end = sec_to_ass(tot_dur)
-    events.append(f"Dialogue: 0,0:00:00.00,{tot_end},TopBadge,,0,0,0,,{{\\fad(400,400)}}✦ STOIC WISDOM ✦\\N{{\\fs32\\c&H00D0EBFF&}}Marcus Aurelius on Overthinking\n")
-
-    for seg in segments:
-        words = seg.words
-        if not words:
-            continue
-        chunk_size = 4
-        for i in range(0, len(words), chunk_size):
-            chunk = words[i:i + chunk_size]
-            for active_w in chunk:
-                w_s = sec_to_ass(max(0.0, active_w.start))
-                w_e = sec_to_ass(min(tot_dur, active_w.end))
-                line_words = []
-                for w in chunk:
-                    clean_w = w.word.strip()
-                    if w == active_w:
-                        line_words.append(f"{{\\c&H0027E2FE&\\3c&H000E6E9C&}}{clean_w}{{\\c&H00F5FAFF&\\3c&H00000000&}}")
-                    else:
-                        line_words.append(clean_w)
-                events.append(f"Dialogue: 1,{w_s},{w_e},SubtitleKaraoke,,0,0,0,,{' '.join(line_words)}\n")
-
-    cta_start = sec_to_ass(tot_dur * 0.45)
-    events.append(f"Dialogue: 2,{cta_start},{tot_end},BottomCTA,,0,0,0,,{{\\fad(400,0)}}✦ FULL 10-MIN LESSON LINKED BELOW ✦\\N{{\\fs32\\c&H00FFFFFF&}}Tap Related Video\\N{{\\fs26\\c&H00B0E0E6&}}Stoic Echoes\n")
-
-    ass_path = f"{shorts_dir}/short2.ass"
-    with open(ass_path, "w", encoding="utf-8") as f:
-        f.write(header + "".join(events))
-
-    # Render video
-    print("  [+] Đang render video vertical 9:16 (Marcus Aurelius Statue)...")
-    bg_img = "d:/KENH GEHIHI/outputs/channel_3/video_1/visuals/scene_2.jpg"
-    out_video = f"{shorts_dir}/short2_master.mp4"
-
-    rain_audio = f"{shorts_dir}/rain_tmp2.mp3"
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-t", str(tot_dur),
-        "-i", "anoisesrc=color=pink:amplitude=0.02:sample_rate=48000,lowpass=f=1200,highpass=f=200,volume=0.35",
-        "-c:a", "libmp3lame", "-b:a", "128k",
-        rain_audio
-    ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    ass_escaped = ass_path.replace("\\", "/").replace(":", "\\:")
-    cmd = [
-        "ffmpeg", "-y",
-        "-loop", "1", "-t", str(tot_dur), "-i", bg_img,
-        "-i", voice_audio,
-        "-i", rain_audio,
-        "-filter_complex",
-        f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,eq=brightness=0.02:contrast=1.08:saturation=1.15,ass={ass_escaped}[v_out];"
-        "[1:a]volume=1.2[v_voice];"
-        "[2:a]volume=0.25[v_rain];"
-        "[v_voice][v_rain]amix=inputs=2:duration=first[a_mix];"
-        f"[a_mix]afade=t=in:ss=0:d=0.5,afade=t=out:st={tot_dur-1.0:.2f}:d=1.0[a_out]",
-        "-map", "[v_out]",
-        "-map", "[a_out]",
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "192k",
-        "-shortest",
-        out_video
-    ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(f"  -> Video hoàn tất: {out_video}")
-
-    # Upload to Channel 3
+    # Upload
     print("  [+] Đang đăng tải lên YouTube (Stoic Echoes)...")
     uploader = YouTubeUploader("channel_3")
     title = "Marcus Aurelius: The 1-Minute Cure for Overthinking 🏛️ #shorts #stoicism"
     desc = """You have power over your mind—not outside events. Realize this, and you will find strength.
 
-🏛️ WATCH THE FULL 10-MINUTE LESSON HERE:
-👉 https://www.youtube.com/watch?v=GmrwQn0HQQU
-(Or tap the Related Video link above the title!)
-
+🏛️ WATCH THE FULL 10-MINUTE LESSON IN THE RELATED VIDEO ABOVE!
 Discover the 7 Stoic Rules to protect your inner peace in a chaotic world.
 
 🔔 Subscribe to Stoic Echoes for timeless philosophy and mental resilience.
@@ -198,7 +269,7 @@ Discover the 7 Stoic Rules to protect your inner peace in a chaotic world.
     tags = ["shorts", "stoicism", "marcus aurelius", "overthinking", "how to stop overthinking", "stoic philosophy", "mental resilience", "inner peace"]
 
     res = uploader.upload_video(
-        video_file_path=out_video,
+        video_file_path=final_video,
         title=title,
         description=desc,
         tags=tags,
@@ -219,21 +290,25 @@ async def main():
     print("🔥 KHỞI ĐỘNG HỆ THỐNG SẢN XUẤT TOÀN DIỆN CHO CẢ 3 KÊNH YOUTUBE")
     print("========================================================================")
 
-    # 1. Channel 1
-    ch1_id = await produce_channel_1()
+    # Run tasks with error handling so one channel failure never breaks others
+    try:
+        await produce_channel_1()
+    except Exception as e:
+        print(f"❌ [LỖI KÊNH 1]: {e}")
 
-    # 2. Channel 2
-    ch2_res = produce_channel_2()
+    try:
+        await produce_channel_2()
+    except Exception as e:
+        print(f"❌ [LỖI KÊNH 2]: {e}")
 
-    # 3. Channel 3
-    ch3_id = await produce_channel_3()
+    try:
+        await produce_channel_3()
+    except Exception as e:
+        print(f"❌ [LỖI KÊNH 3]: {e}")
 
     total_time = time.time() - start_time
     print("\n" + "=" * 70)
-    print(f"🏆 HOÀN THÀNH 100% QUY TRÌNH CHO CẢ 3 KÊNH TRONG {total_time/60:.1f} PHÚT!")
-    print(f"  - Kênh 1 (Kỳ Thú Khám Phá): Video ID {ch1_id}")
-    print(f"  - Kênh 2 (Vintage Holiday): Lên lịch xuất bản Shorts phễu mới")
-    print(f"  - Kênh 3 (Stoic Echoes): Video ID {ch3_id} (Công khai)")
+    print(f"🏆 QUY TRÌNH KẾT THÚC TRONG {total_time/60:.1f} PHÚT!")
     print("=" * 70)
 
 if __name__ == "__main__":

@@ -23,17 +23,12 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install FFmpeg
-        run: |
-          sudo apt update
-          sudo apt install -y ffmpeg
-
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Restore OAuth Tokens from GitHub Secrets
+      - name: Restore OAuth Tokens and Secrets
         env:
           TOKEN_CHANNEL_1: ${{ secrets.TOKEN_CHANNEL_1 }}
           TOKEN_CHANNEL_2: ${{ secrets.TOKEN_CHANNEL_2 }}
@@ -41,12 +36,31 @@ jobs:
           PROXIES_JSON: ${{ secrets.PROXIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
-          mkdir -p config/tokens
-          if [ -n "$TOKEN_CHANNEL_1" ]; then echo "$TOKEN_CHANNEL_1" > config/tokens/token_channel_1.json; fi
-          if [ -n "$TOKEN_CHANNEL_2" ]; then echo "$TOKEN_CHANNEL_2" > config/tokens/token_channel_2.json; fi
-          if [ -n "$TOKEN_CHANNEL_3" ]; then echo "$TOKEN_CHANNEL_3" > config/tokens/token_channel_3.json; fi
-          if [ -n "$PROXIES_JSON" ]; then echo "$PROXIES_JSON" > config/proxies.json; fi
-          if [ -n "$PEXELS_API_KEY" ]; then echo "{\"PEXELS_API_KEY\": \"$PEXELS_API_KEY\"}" > config/api_keys.json; fi
+          python -c "
+          import os, json
+          mapping = [
+              ('TOKEN_CHANNEL_1', 'config/tokens/token_channel_1.json'),
+              ('TOKEN_CHANNEL_2', 'config/tokens/token_channel_2.json'),
+              ('TOKEN_CHANNEL_3', 'config/tokens/token_channel_3.json'),
+              ('PROXIES_JSON', 'config/proxies.json'),
+          ]
+          for env_name, file_path in mapping:
+              val = os.environ.get(env_name, '').strip()
+              if val:
+                  os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(val)
+                  print(f'✅ Successfully restored {file_path}')
+              else:
+                  print(f'⚠️ Warning: Secret {env_name} is empty or not set')
+
+          pexels_key = os.environ.get('PEXELS_API_KEY', '').strip()
+          if pexels_key:
+              os.makedirs('config', exist_ok=True)
+              with open('config/api_keys.json', 'w', encoding='utf-8') as f:
+                  json.dump({'PEXELS_API_KEY': pexels_key}, f)
+              print('✅ Successfully restored config/api_keys.json')
+          "
 
       - name: Run Multi-Channel Production Engine
         env:
