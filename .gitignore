@@ -13,6 +13,7 @@ outputs/
 # OAuth Secrets & Tokens (Secured via GitHub Secrets)
 config/tokens/
 config/client_secrets*.json
+config/api_keys.json
 
 # Old backup
 .git_old/

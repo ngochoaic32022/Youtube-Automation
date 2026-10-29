@@ -39,13 +39,17 @@ jobs:
           TOKEN_CHANNEL_2: ${{ secrets.TOKEN_CHANNEL_2 }}
           TOKEN_CHANNEL_3: ${{ secrets.TOKEN_CHANNEL_3 }}
           PROXIES_JSON: ${{ secrets.PROXIES_JSON }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
           mkdir -p config/tokens
           if [ -n "$TOKEN_CHANNEL_1" ]; then echo "$TOKEN_CHANNEL_1" > config/tokens/token_channel_1.json; fi
           if [ -n "$TOKEN_CHANNEL_2" ]; then echo "$TOKEN_CHANNEL_2" > config/tokens/token_channel_2.json; fi
           if [ -n "$TOKEN_CHANNEL_3" ]; then echo "$TOKEN_CHANNEL_3" > config/tokens/token_channel_3.json; fi
           if [ -n "$PROXIES_JSON" ]; then echo "$PROXIES_JSON" > config/proxies.json; fi
+          if [ -n "$PEXELS_API_KEY" ]; then echo "{\"PEXELS_API_KEY\": \"$PEXELS_API_KEY\"}" > config/api_keys.json; fi
 
       - name: Run Multi-Channel Production Engine
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
           python core/produce_all_channels_daily.py
