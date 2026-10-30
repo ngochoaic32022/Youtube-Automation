@@ -70,18 +70,15 @@ async def produce_channel_1():
     tot_dur = renderer._get_audio_duration(voice_audio)
     print(f"      Thời lượng voiceover: {tot_dur:.2f}s")
 
-    # 3. Fetch Stock Video Clips (Motion Visuals)
-    clips = []
-    for idx, sc in enumerate(scenes_data, 1):
-        clip_path = os.path.join(out_dir, f"motion_clip_{idx}.mp4")
-        if not os.path.exists(clip_path):
-            print(f"  [+] Tải video stock cảnh {idx} cho từ khóa '{sc['keyword']}'...")
-            ok = fetch_stock_video_clip(sc["keyword"], clip_path, orientation="portrait", fallback_keywords=[sc["fallback"], "mysterious space"])
-            if not ok:
-                # If download failed, use test clip or loop
-                clip_path = os.path.join(ROOT_DIR, "outputs", "test_stock_short.mp4")
-        if os.path.exists(clip_path):
-            clips.append(clip_path)
+    # 3. Fetch Motion Visuals (Hybrid Dual-Engine: 1 Veo Hook + Free Pexels Stock)
+    from core.veo_video_generator import VeoVideoGenerator
+    veo_gen = VeoVideoGenerator()
+    clips = veo_gen.fetch_hybrid_clips_for_shorts(
+        scenes=scenes_data,
+        channel_id="channel_1",
+        output_dir=out_dir,
+        veo_quota_per_video=1  # Tiết kiệm credit: Chỉ dùng 1 cảnh Veo cho Hook mở màn, còn lại dùng Stock 0 credit
+    )
 
     # 4. Generate Subtitles
     ass_path = os.path.join(out_dir, "subtitles_ch1.ass")

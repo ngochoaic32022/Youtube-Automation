@@ -35,6 +35,7 @@ jobs:
           TOKEN_CHANNEL_3: ${{ secrets.TOKEN_CHANNEL_3 }}
           PROXIES_JSON: ${{ secrets.PROXIES_JSON }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python -c "
           import os, json
@@ -54,16 +55,24 @@ jobs:
               else:
                   print(f'⚠️ Warning: Secret {env_name} is empty or not set')
 
+          api_keys = {}
           pexels_key = os.environ.get('PEXELS_API_KEY', '').strip()
+          gemini_key = os.environ.get('GEMINI_API_KEY', '').strip()
           if pexels_key:
+              api_keys['PEXELS_API_KEY'] = pexels_key
+          if gemini_key:
+              api_keys['GEMINI_API_KEY'] = gemini_key
+
+          if api_keys:
               os.makedirs('config', exist_ok=True)
               with open('config/api_keys.json', 'w', encoding='utf-8') as f:
-                  json.dump({'PEXELS_API_KEY': pexels_key}, f)
-              print('✅ Successfully restored config/api_keys.json')
+                  json.dump(api_keys, f, indent=2)
+              print('✅ Successfully restored config/api_keys.json with keys:', list(api_keys.keys()))
           "
 
       - name: Run Multi-Channel Production Engine
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python core/produce_all_channels_daily.py

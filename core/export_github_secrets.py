@@ -11,6 +11,7 @@ SECRETS = [
     ("TOKEN_CHANNEL_3", "config/tokens/token_channel_3.json"),
     ("PROXIES_JSON", "config/proxies.json"),
     ("PEXELS_API_KEY", "config/api_keys.json"),
+    ("GEMINI_API_KEY", "config/api_keys.json"),
 ]
 
 print("=" * 60)
@@ -25,11 +26,11 @@ for secret_name, file_path in SECRETS:
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-            if secret_name == "PEXELS_API_KEY":
+            if secret_name in ("PEXELS_API_KEY", "GEMINI_API_KEY"):
                 import json
                 try:
                     data = json.loads(content)
-                    print(data.get("PEXELS_API_KEY", ""))
+                    print(data.get(secret_name, ""))
                 except Exception:
                     print(content)
             else:
